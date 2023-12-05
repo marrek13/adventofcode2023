@@ -1,6 +1,8 @@
 package aockt.y2023
 
 import io.github.jadarma.aockt.core.Solution
+import kotlin.math.max
+import kotlin.math.min
 
 class Y2023D05 : Solution {
     data class Range(val destinationRangeStart: Long, val sourceRangeStart: Long, val rangeLength: Long) {
@@ -18,6 +20,10 @@ class Y2023D05 : Solution {
 
     private fun parseInput(input: String) =
         input
+            .also {
+                maps.clear()
+                seeds.clear()
+            }
             .split("\n")
             .let { lines ->
                 Regex("[0-9]+")
@@ -43,17 +49,58 @@ class Y2023D05 : Solution {
 
 
     override fun partOne(input: String) = parseInput(input).let { (seeds, maps) ->
-        seeds.map { seed ->
-            maps.fold(listOf(seed)) { acc, map ->
-                map
-                    .firstOrNull { it.isDesinationFor(acc.last()) }
-                    ?.let { acc + listOf(it.getDestinationFor(acc.last())) }
-                    ?: (acc + acc.last())
+        seeds.minOf { seed ->
+            maps.fold(seed) { acc, map ->
+                map.firstOrNull { it.isDesinationFor(acc) }?.getDestinationFor(acc) ?: acc
             }
         }
-            .minOf { it.last() }
     }
 
 
-    override fun partTwo(input: String) = parseInput(input)
+    override fun partTwo(input: String) = parseInput(input).let { (seeds, maps) ->
+        seeds
+            .asSequence()
+            .chunked(2)
+            .map { (start, range) -> start to range }
+            .map { seedRange ->
+                maps.fold(listOf(seedRange)) { ranges, mappings ->
+                    val rangesToMap = ranges.toMutableList()
+                    val mappedRanges = mutableListOf<Pair<Long, Long>>()
+
+                    while(rangesToMap.isNotEmpty()) {
+                        val range = rangesToMap.removeFirst()
+                        val start = range.first
+                        val end = start + range.second
+
+                        val mapping = mappings.find {
+                            (_, mapStart, mapRange) ->
+                            val mapEnd = mapStart + mapRange
+                            start < mapEnd && end > mapStart
+                        }
+
+                        if(mapping == null) {
+                            mappedRanges += range
+                            continue
+                        }
+
+                        val (dest, mapStart, mapRange) = mapping
+                        val mapEnd = mapStart + mapRange
+                        mappedRanges += (dest + (max(start, mapStart) - mapStart)) to (min(end, mapEnd) - max(start, mapStart))
+
+                        if(start < mapStart) {
+                            rangesToMap += start to (mapStart - start)
+                        }
+
+                        if(end > mapEnd) {
+                            rangesToMap += mapEnd to (end - mapEnd)
+                        }
+                    }
+
+                    mappedRanges
+                }
+            }
+            .flatten()
+            .minOf { it.first }
+
+    }
 }
