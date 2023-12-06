@@ -4,12 +4,10 @@ import io.github.jadarma.aockt.core.Solution
 
 class Y2023D06 : Solution {
     data class Race(val time: Long, val distance: Long) {
-        fun getNonZeroRange() = 1..<time
-
-        fun calculateDistance(pressTime: Long) = (time - pressTime) * pressTime
+        private fun calculateDistance(pressTime: Long) = (time - pressTime) * pressTime
 
         fun findRecordTimes(): Int {
-            val timeRange = getNonZeroRange()
+            val timeRange = 1..<time
             val middleOfRange = (timeRange.first + timeRange.last) / 2 + 1
 
             var recordTimesCounter = 1
